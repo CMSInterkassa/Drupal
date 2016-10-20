@@ -1,0 +1,13 @@
+# Модуль разработан в компании GateOn предназначен для CMS Drupal 8.2.x + Ubercart 4
+# Сайт разработчикa: www.gateon.net
+# E-mail: www@smartbyte.pro
+# Версия: 1.2
+
+interkassa.styles:
+  css:
+    theme:
+      css/uc_interkassa.css: {}
+
+interkassa.direct:
+  js:
+    https://sci.interkassa.com//static/checkout/javascript/direct.min.js: { type: external, minified: true }

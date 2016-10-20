@@ -1,0 +1,34 @@
+<?php
+/**
+ * @name Интеркасса 2.0
+ * @description Модуль разработан в компании GateOn предназначен для CMS Drupal 8.2.x  + Ubercart 4
+ * @author www.gateon.net
+ * @email www@smartbyte.pro
+ * @version 1.2
+ * @update 20.10.2016
+ */
+
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+
+function uc_interkassa_help($route_name, RouteMatchInterface $route_match) {
+  // Provide information and instructions on the payment method add and edit forms.
+  if ($route_name == 'entity.uc_payment_method.add_form' &&
+      $route_match->getRawParameter('plugin_id') == 'interkassa') {
+    return '<p>' . t('Для приема платежей с помощью Интеркассы. Пожалуйста убедитесь, что выбраная валюта присутствует в настройках вашей кассы.') .
+    '</p>';
+  }
+  elseif ($route_name == 'entity.uc_payment_method.edit_form' &&
+          $route_match->getParameter('uc_payment_method')->getPlugin()->getPluginId() == 'interkassa') {
+    return '<p>' . t('Для приема платежей с помощью Интеркассы. Пожалуйста убедитесь, что выбраная валюта присутствует в настройках вашей кассы.') . '</p>';
+  }
+}
+
+function uc_interkassa_ucga_display() {
+
+  //@todo, inject $route_name so we can do
+  if (arg(0) == 'cart' && arg(1) == 'interkassa' && arg(2) == 'complete') {
+    return TRUE;
+  }
+}

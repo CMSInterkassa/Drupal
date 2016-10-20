@@ -1,0 +1,31 @@
+# Schema for the configuration files of the uc_interkassa module.
+# Модуль разработан в компании GateOn предназначен для CMS Drupal 8.2.x + Ubercart 4
+# Сайт разработчикa: www.gateon.net
+# E-mail: www@smartbyte.pro
+# Версия: 1.2
+
+payment_method.settings.interkassa:
+  type: mapping
+  label: 'Interkassa payment method configuration settings'
+  mapping:
+    check:
+      type: boolean
+      label: 'Allow e-checks'
+    checkout_type:
+      type: string
+      label: 'Use direct or dynamic checkout'
+    demo:
+      type: boolean
+      label: 'Flag to indicate demo mode for gateway - no actual money will be transferred if TRUE'
+    language:
+      type: string
+      label: 'Language code'
+    notification_url:
+      type: uri
+      label: 'Notification callback URL'
+    secret_word:
+      type: string
+      label: ''
+    sid:
+      type: string
+      label: 'Vendor account number'

@@ -1,4 +1,4 @@
-﻿Модуль разработан в компании GateOn предназначен для CMS Drupal 7.51 + Ubercart 3
+﻿Модуль разработан в компании GateOn предназначен для CMS Drupal 7.5 + Ubercart 3
 Сайт разработчикa: www.gateon.net
 E-mail: www@smartbyte.pro
 Версия: 1.3

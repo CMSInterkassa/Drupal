@@ -171,6 +171,7 @@ class Interkassa extends PaymentMethodPluginBase implements OffsitePaymentMethod
      */
     public function buildRedirectForm(array $form, FormStateInterface $form_state, OrderInterface $order = NULL)
     {
+        var_dump($order->getCurrency());
         $address = $order->getAddress('billing');
         if ($address->country) {
             $country = \Drupal::service('country_manager')->getCountry($address->country)->getAlpha3();

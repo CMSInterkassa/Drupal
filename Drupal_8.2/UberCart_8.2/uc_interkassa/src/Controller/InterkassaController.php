@@ -1,12 +1,10 @@
 <?php
 
 /**
- * @name Интеркасса 2.0
- * @description Модуль разработан в компании GateOn предназначен для CMS Drupal 8.2.x  + Ubercart 4
- * @author www.gateon.net
- * @email www@smartbyte.pro
- * @version 1.2
- * @update 20.10.2016
+ * Модуль разработан в компании GateOn предназначен для CMS Drupal 8.2.x + Ubercart 4
+ * Сайт разработчикa: www.gateon.net
+ * E-mail: www@smartbyte.pro
+ * Версия: 1.2
  */
 
 namespace Drupal\uc_interkassa\Controller;
@@ -81,7 +79,7 @@ class InterkassaController extends ControllerBase
                 $order->setStatusId('canceled')->save();
                 $comment = $this->t('Заказ был отменен пользователем');
                 uc_payment_enter($order->id(), 'interkassa', $request->request->get('total'), 0, NULL, $comment);
-                drupal_set_message($this->t('Заказ был отменен пользователем'),'error');
+                drupal_set_message($this->t('Заказ был отменен пользователем'));
                 uc_order_comment_save($order->id(), 0, $this->t('Заказ не был оплачен с помощью Интеркассы.'), 'admin');
                 return array(
                     '#theme' => 'uc_cart_complete_sale',
@@ -93,7 +91,7 @@ class InterkassaController extends ControllerBase
                 $order->setStatusId('pending')->save();
                 $comment = $this->t('Заказ не был оплачен');
                 uc_payment_enter($order->id(), 'interkassa', $request->request->get('total'), 0, NULL, $comment);
-                drupal_set_message($this->t('Заказ не был оплачен'),'error');
+                drupal_set_message($this->t('Заказ не был оплачен'));
                 uc_order_comment_save($order->id(), 0, $this->t('Заказ не был оплачен с помощью Интеркассы.'), 'admin');
                 return array(
                     '#theme' => 'uc_cart_complete_sale',
@@ -120,6 +118,11 @@ class InterkassaController extends ControllerBase
 
             $values = $request->request;
             \Drupal::logger('uc_interkassa')->notice('Получено оповещение о заказе с следующими данными: @data', ['@data' => print_r($values->all(), TRUE)]);
+
+            $this->wrlog('notification');
+        $this->wrlog('#####################START#####################');
+        $this->wrlog($values);
+        $this->wrlog('######################END#######################');
 
             $request_order_id = $values->get('ik_pm_no');
 

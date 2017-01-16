@@ -21,6 +21,7 @@ function commerce_interkassa2_commerce_payment_method_info()
             'offsite_autoredirect' => FALSE,
         ),
     );
+    var_dump($_SESSION);
 }
 
 /*Return module default settings*/
@@ -106,9 +107,10 @@ function commerce_interkassa2_redirect_form($form, &$form_state, $order, $paymen
     commerce_order_save($order);
 
     global $user, $base_url;
+
     $wrapper = entity_metadata_wrapper('commerce_order', $order);
     $ik_co_id = $payment_method['settings']['ik_co_id'];
-    $ik_am = $wrapper->commerce_order_total->amount->value();
+    $ik_am = commerce_currency_amount_to_decimal($wrapper->commerce_order_total->amount->value(), $wrapper->commerce_order_total->currency_code->value());
     $ik_cur = $wrapper->commerce_order_total->currency_code->value();
     $ik_pm_no = $order->order_id;
     $ik_desc = '#' . $order->order_id;
@@ -196,7 +198,9 @@ function commerce_interkassa2_interaction()
 /*Return page where user had been redirected from Interkassa after payment,depending on payment result*/
 function commerce_interkassa2_user_information()
 {
-    $order = commerce_order_load(75);
+    if(!empty($_POST) && isset($_POST['ik_pm_no']) && isset($_POST['ik_inv_st'])){
+
+    $order = commerce_order_load($_POST['ik_pm_no']);
     $wrapper = entity_metadata_wrapper('commerce_order', $order);
     $transaction = commerce_payment_transaction_new('interkassa2', $_POST['ik_pm_no']);
     $transaction->amount == $wrapper->commerce_order_total->amount->value();
@@ -226,6 +230,8 @@ function commerce_interkassa2_user_information()
     }
     drupal_goto(commerce_checkout_order_uri($order));
     commerce_payment_transaction_save($transaction);
+
+    }
 }
 
 /*Return true if request IP is Interkassa Getaway IP*/
@@ -236,7 +242,7 @@ function checkIP()
         'ip_end' => '151.80.190.104'
     );
 
-    if (!ip2long($_SERVER['REMOTE_ADDR']) >= ip2long($ip_stack['ip_begin']) && !ip2long($_SERVER['REMOTE_ADDR']) <= ip2long($ip_stack['ip_end'])) {
+    if (!(ip2long($_SERVER['REMOTE_ADDR']) >= ip2long($ip_stack['ip_begin']) && !ip2long($_SERVER['REMOTE_ADDR']) <= ip2long($ip_stack['ip_end']))) {
         wrlog('REQUEST IP' . $_SERVER['REMOTE_ADDR'] . 'doesnt match');
         die('Ты мошенник! Пшел вон отсюда!');
     }

@@ -191,6 +191,7 @@ function commerce_interkassa2_interaction()
                 commerce_checkout_complete($order);
                 commerce_order_status_update($order, 'completed');
                 commerce_order_save($order);
+                echo 'ok';
 
             }
         }

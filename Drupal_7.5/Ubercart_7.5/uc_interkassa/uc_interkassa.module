@@ -2,10 +2,10 @@
 
 /**
  * @CMS_Drupal_version 7.53
- * @driver_version 1.4
+ * @driver_version 1.5
  * @author GateON
  * @E-mail www@smartbyte.pro
- * @update_date 26.12.2016
+ * @update_date 31.01.2017
  */
 
 
@@ -13,7 +13,7 @@
 function uc_interkassa_method_card($option, &$arg1)
 {
     $ik_form = array();
-    if($option == 'settings'){
+    if ($option == 'settings') {
         $ik_form['ik_co_id'] = array(
             '#type' => 'textfield',
             '#title' => t('Идентификатор кассы'),
@@ -35,13 +35,35 @@ function uc_interkassa_method_card($option, &$arg1)
             '#description' => t('Тестовый ключ безопасности кассы.'),
             '#required' => TRUE,
         );
+        $ik_form['api_id'] = array(
+            '#type' => 'textfield',
+            '#title' => t('API Id'),
+            '#default_value' => variable_get('api_id', ''),
+            '#description' => t('Настройки аккаунта, вкладка API'),
+            '#required' => TRUE,
+        );
+        $ik_form['api_key'] = array(
+            '#type' => 'textfield',
+            '#title' => t('API key'),
+            '#default_value' => variable_get('api_key', ''),
+            '#description' => t('Настройки аккаунта, вкладка API'),
+            '#required' => TRUE,
+        );
+        $ik_form['api_status'] = array(
+            '#type' => 'radios',
+            '#title' => t('Статус API'),
+            '#options' => array(
+                'on' => t('Включено'),
+                'off' => t('Отключено'),
+            ),
+            '#default_value' => variable_get('api_status', '')
+        );
     }
     return $ik_form;
 }
 
 function uc_interkassa_menu()
 {
-    wrlog('uc_interkassa_menu');
 
     $items['uc_interkassa/result'] = array(
         'title' => 'Internal Data',
@@ -73,11 +95,21 @@ function uc_interkassa_menu()
         'callback arguments' => array('waitAccept'),
         'type' => MENU_CALLBACK
     );
+    $items['uc_interkassa/sign'] = array(
+        'access callback' => TRUE,
+        'page callback' => 'uc_interkassa_ajax_callback',
+        'type' => MENU_CALLBACK
+    );
     return $items;
 }
 
 
-function uc_interkassa_form_alter(&$form, $state, $form_id){
+
+//АНПРАВИТИ ПОСТ НА АЯКС МЕТОД
+
+
+function uc_interkassa_form_alter(&$form, $state, $form_id)
+{
     if ($form_id == 'uc_cart_checkout_review_form') {
         if (($ik_pm_no = intval($_SESSION['cart_order'])) > 0) {
             if (empty($state['post'])) {
@@ -92,6 +124,7 @@ function uc_interkassa_form_alter(&$form, $state, $form_id){
             }
         }
     }
+
 }
 
 function uc_interkassa_uc_payment_method()
@@ -119,7 +152,7 @@ function uc_interkassa_form()
     uc_order_update_status($order->order_id, 'processing');
 
     $form = array(
-        '#id' => 'checkout',
+        '#id' => 'interkassaform',
         '#name' => 'checkout',
         '#method' => 'post',
         '#action' => 'https://sci.interkassa.com',
@@ -131,40 +164,68 @@ function uc_interkassa_form()
     foreach ($data as $name => $value) {
         $form[$name] = array('#type' => 'hidden', '#value' => $value);
     }
+    unset($form['button']);
+    unset($form['submit']);
+
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Подтвердить заказ'),
     );
 
+
     drupal_set_message(t("Заказ успешно оформлен! Способ оплаты: Интеркасса"));
+
+    if (variable_get('api_status', '') == 'on') {
+        $form['button'] = array(
+            '#type' => 'button',
+            '#value' => t('Выбрать удобный метод оплаты'),
+            '#id' => 'apiik',
+            '#data-toggle' => 'modal'
+        );
+        $ps_pass = drupal_get_path('module', 'uc_interkassa') . '/paysystems/';
+        $payment_systems = getIkPaymentSystems(variable_get('ik_co_id', ''), variable_get('api_id', ''), variable_get('api_key', ''));
+        $api = theme('api', array(
+            'text_select_payment_method' => t('Выберите удобную для Вас платежную систему'),
+            'text_select_currency' => t('Укажите валюту(UAH,RUB,USD,EUR)'),
+            'text_press_pay' => t('Нажмите оплатить'),
+            'pay_via' => t('Оплатить с '),
+            'ajax_url' => url('uc_interkassa/sign', array('absolute' => TRUE)),
+            'image' => $ps_pass,
+            'payment_systems' => $payment_systems
+
+        ));
+        print($api);
+        drupal_set_message(t("Выберите удобный для Вас метод оплаты и валюту прямо на странице!"));
+    }
+
 
     return $form;
 }
 
 function uc_interkassa_get_data($orderId = 0, $summ = '1', $order)
 {
-
     $secret_key = variable_get('secret_key', '');
 
     if ($order->currency == 'RUR') {
-        $ik_am = 'RUB';
+        $ik_cur = 'RUB';
     } else {
-        $ik_am = $order->currency;
+        $ik_cur = $order->currency;
     }
 
     $formFields = array(
         'ik_co_id' => variable_get('ik_co_id', ''),
         'ik_am' => $order->order_total,
         'ik_pm_no' => $orderId,
-        'ik_cur' => $ik_am,
+        'ik_cur' => $ik_cur,
         'ik_desc' => '#' . $orderId,
         'ik_ia_u' => url('uc_interkassa/result', array('absolute' => TRUE)),
         'ik_suc_u' => url('uc_interkassa/success', array('absolute' => TRUE)),
         'ik_fal_u' => url('uc_interkassa/fail', array('absolute' => TRUE)),
         'ik_pnd_u' => url('uc_interkassa/pending', array('absolute' => TRUE))
     );
+
     $formData = $formFields;
-	ksort($formData, SORT_STRING);
+    ksort($formData, SORT_STRING);
     $formData['secret_key'] = $secret_key;
     $str = implode(':', $formData);
     $sign = base64_encode(md5($str, true));
@@ -193,11 +254,13 @@ function uc_interkassa_result_payment()
                 $dataSet[$key] = $value;
             }
 
+
             unset($dataSet['ik_sign']);
             ksort($dataSet, SORT_STRING);
             array_push($dataSet, $secret_key);
             $signString = implode(':', $dataSet);
             $sign = base64_encode(md5($signString, true));
+
 
             if ($request_sign != $sign) {
                 drupal_set_title(t('Заказ не оплачен'));
@@ -218,12 +281,11 @@ function uc_interkassa_result_payment()
             }
         }
     }
-    return $output;
 }
 
 function uc_interkassa_payment_end($status)
 {
-    if(!empty($_POST) && isset($_POST['ik_inv_st']) && isset($_POST['ik_pm_no'])) {
+    if (!empty($_POST) && isset($_POST['ik_inv_st']) && isset($_POST['ik_pm_no'])) {
 
         $order = uc_order_load($_POST['ik_pm_no']);
         if ($status == 'success') {
@@ -238,7 +300,7 @@ function uc_interkassa_payment_end($status)
             drupal_set_message(t("Заказ не был оплачен пользователем."), 'error');
             uc_order_comment_save($_POST['ik_pm_no'], 0, t('Пользователь вернулся на сайт. Заказ не был оплачен пользователем.'), 'admin');
             drupal_goto('cart');
-        } elseif($status == 'waitAccept') {
+        } elseif ($status == 'waitAccept') {
             uc_cart_complete_sale($order);
             drupal_set_message(t("Заказ ожидает оплаты"));
             uc_order_comment_save($_POST['ik_pm_no'], 0, t('Пользователь вернулся на сайт. Заказ ожидает оплаты.'), 'admin');
@@ -246,6 +308,7 @@ function uc_interkassa_payment_end($status)
         }
     }
 }
+
 function checkIP()
 {
     $ip_stack = array(
@@ -259,34 +322,100 @@ function checkIP()
     }
     return true;
 }
+function uc_interkassa_theme()
+{
+    return array(
+        'api' => array(
+            'template' => 'api',
+            'variables' => array('ik' => null),
+        ),
+    );
+}
 
-   function wrlog($content)
-        {
-            $file = 'log.txt';
-            $doc = fopen($file, 'a');
-            if($doc){
-                file_put_contents($file, PHP_EOL . '====================' . date("H:i:s") . '=====================', FILE_APPEND);
-                if (is_array($content)) {
-                    wrlog('Вывод массива:');
-                    foreach ($content as $k => $v) {
-                        if (is_array($v)) {
-                            wrlog($v);
-                        } else {
-                            file_put_contents($file, PHP_EOL . $k . '=>' . $v, FILE_APPEND);
-                        }
-                    }
-                }elseif(is_object($content)){
-                    wrlog('Вывод обьекта:');
-                    foreach (get_object_vars($content) as $k => $v) {
-                        if (is_object($v)) {
-                            wrlog($v);
-                        } else {
-                            file_put_contents($file, PHP_EOL . $k . '=>' . $v, FILE_APPEND);
-                        }
-                    }
-                } else {
-                    file_put_contents($file, PHP_EOL . $content, FILE_APPEND);
+function uc_interkassa_ajax_callback()
+{
+    $dataSet = [];
+    $secret_key = variable_get('secret_key', '');
+
+    foreach ($_POST as $key => $value) {
+        if (!preg_match('/ik_/', $key)) continue;
+        $dataSet[$key] = $value;
+    }
+
+    unset($dataSet['ik_sign']);
+    ksort($dataSet, SORT_STRING);
+    array_push($dataSet, $secret_key);
+    $signString = implode(':', $dataSet);
+    $sign = base64_encode(md5($signString, true));
+    echo $sign;
+
+}
+
+function getIkPaymentSystems($ik_co_id, $ik_api_id, $ik_api_key)
+{
+    $username = $ik_api_id;
+    $password = $ik_api_key;
+    $remote_url = 'https://api.interkassa.com/v1/paysystem-input-payway?checkoutId=' . $ik_co_id;
+
+    // Create a stream
+    $opts = array(
+        'http' => array(
+            'method' => "GET",
+            'header' => "Authorization: Basic " . base64_encode("$username:$password")
+        )
+    );
+
+    $context = stream_context_create($opts);
+    $file = file_get_contents($remote_url, false, $context);
+    $json_data = json_decode($file);
+
+    $payment_systems = array();
+    foreach ($json_data->data as $ps => $info) {
+        $payment_system = $info->ser;
+        if (!array_key_exists($payment_system, $payment_systems)) {
+            $payment_systems[$payment_system] = array();
+            foreach ($info->name as $name) {
+                //ВЫБРАЛИ ТОЛЬКО АНГЛИЙСКИЙ ПЕРЕВОД ТАК КАК ОН ЕСТЬ У ВСЕХ МЕТОДОВ
+                if ($name->l == 'en') {
+                    $payment_systems[$payment_system]['title'] = ucfirst($name->v);
                 }
-                fclose($doc);
+                $payment_systems[$payment_system]['name'][$name->l] = $name->v;
+
             }
         }
+        $payment_systems[$payment_system]['currency'][strtoupper($info->curAls)] = $info->als;
+
+    }
+    return $payment_systems;
+}
+
+function wrlog($content)
+{
+    $file = 'log.txt';
+    $doc = fopen($file, 'a');
+    if ($doc) {
+        file_put_contents($file, PHP_EOL . '====================' . date("H:i:s") . '=====================', FILE_APPEND);
+        if (is_array($content)) {
+            wrlog('Вывод массива:');
+            foreach ($content as $k => $v) {
+                if (is_array($v)) {
+                    wrlog($v);
+                } else {
+                    file_put_contents($file, PHP_EOL . $k . '=>' . $v, FILE_APPEND);
+                }
+            }
+        } elseif (is_object($content)) {
+            wrlog('Вывод обьекта:');
+            foreach (get_object_vars($content) as $k => $v) {
+                if (is_object($v)) {
+                    wrlog($v);
+                } else {
+                    file_put_contents($file, PHP_EOL . $k . '=>' . $v, FILE_APPEND);
+                }
+            }
+        } else {
+            file_put_contents($file, PHP_EOL . $content, FILE_APPEND);
+        }
+        fclose($doc);
+    }
+}

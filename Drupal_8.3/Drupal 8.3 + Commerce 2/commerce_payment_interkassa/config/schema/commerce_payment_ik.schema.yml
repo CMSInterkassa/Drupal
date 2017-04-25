@@ -1,0 +1,15 @@
+commerce_payment.commerce_payment_gateway.plugin.ik_offsite_redirect:
+  type: commerce_payment_gateway_configuration
+  mapping:
+    ik_co_id:
+      type: string
+      label: 'Interkassa Purse Id'
+    ik_s_key:
+      type: string
+      label: 'Secret safety key'
+    ik_t_key:
+      type: string
+      label: 'Test safety key'
+    ik_test:
+      type: boolean
+      label: 'Test mode'

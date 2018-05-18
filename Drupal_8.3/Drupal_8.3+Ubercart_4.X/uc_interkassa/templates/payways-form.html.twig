@@ -1,0 +1,43 @@
+{{ form.form_build_id }}
+{{ form.form_token }}
+{{ form.form_id }}
+{{ form.payment_metod }}
+
+<div class="container">
+  <h3>
+    1. Выберите удобный способ оплаты<br>
+    2. Укажите валюту<br>
+    3. Нажмите &laquo;Оплатить&raquo;
+  </h3>
+  <div class="row">
+    {% for key,value in form.content if key|first != '#' %}
+    <div class="col-sm-3 text-center payment_system">
+      <div class="panel panel-warning panel-pricing">
+        <div class="panel-heading">
+          <div class="panel-image">
+            <img src="{{ value.image['#url'] }}"
+                 alt="{{ key }}">
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="input-group">
+            <div class="radioBtn btn-group">
+              {% for currency ,currencyAlias in value.currency if currency|first != '#' %}
+                <a class="btn btn-primary btn-sm notActive"
+                   data-toggle="fun"
+                   data-payment ="{{ key }}"
+                   data-title="{{ currency }}">{{ currencyAlias['#title'] }}</a>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="clear"></div>
+        <div class="panel-footer">
+          <a class="btn, btn-lg, btn-block, btn-success, ik-payment-confirmation"
+             data-payment ="{{ key }}">{{ value.payment_confirmation['#title'] }}<br><strong>{{ value.payment_confirmation['#value'] }}</strong></a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>

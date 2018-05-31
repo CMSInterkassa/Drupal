@@ -98,7 +98,13 @@ class InterkassaController extends ControllerBase {
       uc_order_comment_save($uc_order->id(), 0, $this->t('Не пройдена проверка IP адреса Интеркассы.'), 'admin');
       return new Response();
     }
-    $sign = $this->createSign($post,$configuration);
+    if (isset($post['ik_pw_via']) && $post['ik_pw_via'] == 'test_interkassa_test_xts') {
+      $key = $configuration['test_key'];
+    }
+    else {
+      $key = $configuration['secret_key'];
+    }
+    $sign = $this->createSign($post,$key);
     if (!isset($post['ik_sign']) || $post['ik_sign'] != $sign) {
       $uc_order->setStatusId('canceled')->save();
       uc_order_comment_save($uc_order->id(), 0, $this->t('Не пройдена проверка подписи Интеркассы.'), 'admin');
@@ -124,7 +130,12 @@ class InterkassaController extends ControllerBase {
       $plugin = \Drupal::service('plugin.manager.uc_payment.method')
         ->createFromOrder($order);
       $configuration = $plugin->getConfiguration();
-      $sign = $this->createSign($post, $configuration);
+      $sign = $this->createSign($post, $configuration['secret_key']);
+      header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+      header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+      header("Cache-Control: no-store, no-cache, must-revalidate");
+      header("Cache-Control: post-check=0, pre-check=0", false);
+      header("Pragma: no-cache");
       echo $sign;
     }
     exit;

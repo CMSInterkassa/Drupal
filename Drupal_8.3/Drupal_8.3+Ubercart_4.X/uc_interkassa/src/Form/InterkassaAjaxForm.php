@@ -29,7 +29,7 @@ class InterkassaAjaxForm extends FormBase {
 
     $content = $this->getPaymentsAPI($config);
 
-    $form['#action'] = Url::fromRoute('uc_interkassa.sendSign', ['absolute' => TRUE])->toString();
+    $form['#action'] = Url::fromRoute('uc_interkassa.sendSign')->setAbsolute()->toString();
     $form['#theme'] = 'payways_form';
     $form['payment_metod'] = array('#type' => 'hidden', '#value' => '');
     foreach ($content as $name => $payway) {

@@ -54,7 +54,6 @@ class Interkassa extends PaymentMethodPluginBase implements OffsitePaymentMethod
       'test_key' => '',
       'sid' => '',
       'secret_key' => '',
-      'test_key' => '',
       'api_mode' => FALSE,
       'api_id' => '',
       'api_key' => '',
@@ -99,7 +98,7 @@ class Interkassa extends PaymentMethodPluginBase implements OffsitePaymentMethod
     $form['api_mode'] = array(
       '#type' => 'checkbox',
       '#title' => $this->t('Включить API'),
-      '#description' => $this->t('Включить API/Выкключить Api.'),
+      '#description' => $this->t('Включить API/Выключить Api.'),
       '#default_value' => $this->configuration['api_mode'],
     );
     $form['api_id'] = array(
@@ -144,14 +143,14 @@ class Interkassa extends PaymentMethodPluginBase implements OffsitePaymentMethod
       'ik_desc' => '#' . $order->id(),
       'ik_am' => uc_currency_format($order->getTotal(), FALSE, FALSE, '.'),
       'ik_cur' => $order->getCurrency(),
-      'ik_ia_u' => Url::fromRoute('uc_interkassa.notification', ['uc_order' => $order->id()], ['absolute' => TRUE])->toString(),
-      'ik_fal_u' => Url::fromRoute('uc_interkassa.complete', ['uc_order' => $order->id()], ['absolute' => TRUE])->toString(),
-      'ik_suc_u' => Url::fromRoute('uc_interkassa.complete', ['uc_order' => $order->id()], ['absolute' => TRUE])->toString(),
-      'ik_pnd_u' => Url::fromRoute('uc_interkassa.complete', ['uc_order' => $order->id()], ['absolute' => TRUE])->toString()
+      'ik_ia_u' => Url::fromRoute('uc_interkassa.notification', ['uc_order' => $order->id()])->setAbsolute()->toString(),
+      'ik_fal_u' => Url::fromRoute('uc_interkassa.complete', ['uc_order' => $order->id()])->setAbsolute()->toString(),
+      'ik_suc_u' => Url::fromRoute('uc_interkassa.complete', ['uc_order' => $order->id()])->setAbsolute()->toString(),
+      'ik_pnd_u' => Url::fromRoute('uc_interkassa.complete', ['uc_order' => $order->id()])->setAbsolute()->toString()
 
     );
 
-    $sign = $this->createSign($data,$this->configuration);
+    $sign = $this->createSign($data,$this->configuration['secret_key']);
 
     $data['ik_sign'] = $sign;
 

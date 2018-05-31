@@ -3,7 +3,7 @@ namespace Drupal\uc_interkassa;
 use GuzzleHttp\Exception\TransferException;
 
 trait InterkassaPaymentTrait {
-  public function createSign($data, $configuration) {
+  public function createSign($data, $secret_key) {
     if (!empty($data['ik_sign'])) unset($data['ik_sign']);
 
     $dataSet = array();
@@ -11,11 +11,9 @@ trait InterkassaPaymentTrait {
       if (!preg_match('/ik_/', $key)) continue;
       $dataSet[$key] = $value;
     }
-    $configuration['test_mode']?
-      $key = $configuration['test_key']:
-      $key = $configuration['secret_key'];
+
     ksort($dataSet, SORT_STRING);
-    array_push($dataSet, $key);
+    array_push($dataSet, $secret_key);
     $signString = implode(':', $dataSet);
     $sign = base64_encode(md5($signString, true));
     return $sign;
@@ -34,8 +32,8 @@ trait InterkassaPaymentTrait {
       }
       catch (TransferException  $e) {
         \Drupal::logger('uc_interkassa')->error('API request failed with HTTP error %error.', ['%error' => $e->getMessage()]);
-        \Drupal\Core\Messenger\MessengerTrait::messenger()->addWarning('API request failed with HTTP error.' . $e->getMessage());
-        \Drupal\Core\Messenger\MessengerTrait::messenger()->addWarning('Invalid API parameters');
+        \Drupal::messenger()->addWarning('API request failed with HTTP error.' . $e->getMessage());
+        \Drupal::messenger()->addWarning('Invalid API parameters');
         return $accountId;
       }
       if(isset($response) && $response) {
@@ -49,7 +47,7 @@ trait InterkassaPaymentTrait {
         }
       }
       if (!$accountId) {
-        \Drupal\Core\Messenger\MessengerTrait::messenger()->addWarning('Invalid API parameters');
+        \Drupal::messenger()->addWarning('Invalid API parameters');
       }
     }
     return $accountId;
@@ -64,7 +62,7 @@ trait InterkassaPaymentTrait {
       }
       catch (TransferException  $e) {
         \Drupal::logger('uc_interkassa')->error('Interkassa request failed with HTTP error %error.', ['%error' => $e->getMessage()]);
-        \Drupal\Core\Messenger\MessengerTrait::messenger()->addWarning('Interkassa request failed with HTTP error.' . $e->getMessage());
+        \Drupal::messenger()->addWarning('Interkassa request failed with HTTP error.' . $e->getMessage());
         return array();
       }
 
@@ -76,7 +74,7 @@ trait InterkassaPaymentTrait {
         }
       }
       if (!$paywaySet) {
-        \Drupal\Core\Messenger\MessengerTrait::messenger()->addWarning('Something was wrong!');
+        \Drupal::messenger()->addWarning('Something was wrong!');
       }
     return $paywaySet;
   }
@@ -94,9 +92,9 @@ trait InterkassaPaymentTrait {
       } catch (TransferException  $e) {
         \Drupal::logger('uc_interkassa')
           ->error('API request failed with HTTP error %error.', ['%error' => $e->getMessage()]);
-        \Drupal\Core\Messenger\MessengerTrait::messenger()
+        \Drupal::messenger()
           ->addWarning('API request failed with HTTP error.' . $e->getMessage());
-        \Drupal\Core\Messenger\MessengerTrait::messenger()->addWarning('Invalid API parameters');
+        \Drupal::messenger()->addWarning('Invalid API parameters');
         return $payment_systems;
       }
       if(isset($response) && $response) {
@@ -107,7 +105,7 @@ trait InterkassaPaymentTrait {
         }
       }
       if (!$payways) {
-        \Drupal\Core\Messenger\MessengerTrait::messenger()->addWarning('Something was wrong!');
+        \Drupal::messenger()->addWarning('Something was wrong!');
       }
       else {
         foreach ($payways as $ps => $info) {
@@ -137,7 +135,7 @@ trait InterkassaPaymentTrait {
     );
 
     if (!ip2long($_SERVER['REMOTE_ADDR']) >= ip2long($ip_stack['ip_begin']) && !ip2long($_SERVER['REMOTE_ADDR']) <= ip2long($ip_stack['ip_end'])) {
-      $this->wrlog('REQUEST IP' . $_SERVER['REMOTE_ADDR'] . 'doesnt match');
+      \Drupal::messenger()->addWarning('REQUEST IP' . $_SERVER['REMOTE_ADDR'] . 'doesnt match');
       return FALSE;
     }
     return TRUE;

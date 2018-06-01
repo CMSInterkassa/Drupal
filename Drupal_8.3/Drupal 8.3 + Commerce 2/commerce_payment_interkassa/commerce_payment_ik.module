@@ -1,0 +1,8 @@
+<?php
+function commerce_payment_ik_theme() {
+  return [
+    'payways_form' => [
+      'render element' => 'form',
+    ],
+  ];
+}

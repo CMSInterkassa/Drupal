@@ -1,0 +1,10 @@
+interkassa:
+  version: 1.x
+  css:
+    theme:
+      css/commerce_payment_ik.css: {}
+  js:
+    js/interkassa_modal.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal.dialog.ajax

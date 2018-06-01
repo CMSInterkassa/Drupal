@@ -1,16 +1,15 @@
-commerce_payment_ik.dummy_redirect_post:
-  path: 'commerce_payment_ik/dummy_redirect_post'
+commerce_payment_ik.sendSign:
+  path: '/interkassa/sendSign'
   defaults:
-    _controller: '\Drupal\commerce_payment_ik\Controller\DummyRedirectController::post'
-  options:
-    no_cache: TRUE
+    _title: 'Send payment sign'
+    _controller: '\Drupal\commerce_payment_ik\Controller\InterkassaController::sendSign'
   requirements:
-    _access: 'TRUE'
-commerce_payment_ik.dummy_redirect_302:
-  path: 'commerce_payment_ik/dummy_redirect_302'
+    _permission: 'access content'
+
+commerce_payment_ik.open_modal_payment:
+  path: '/interkassa/open_modal_payment'
   defaults:
-    _controller: '\Drupal\commerce_payment_ik\Controller\DummyRedirectController::on302'
-  options:
-    no_cache: TRUE
+    _title: 'Send payment request'
+    _controller: '\Drupal\commerce_payment_ik\Controller\InterkassaController::open_modal_payment'
   requirements:
-    _access: 'TRUE'
+    _permission: 'access content'

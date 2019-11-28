@@ -1,17 +1,14 @@
 <?php
 /**
- * Модуль разработан в компании GateOn предназначен для CMS Drupal 8.2.x + Ubercart 4
+ * Модуль разработан в компании GateOn предназначен для CMS Drupal 8.1.x + Ubercart 4
  * Сайт разработчикa: www.gateon.net
  * E-mail: www@smartbyte.pro
- * Версия: 1.2
+ * Версия: 1.1
  */
 
 
 use Drupal\Core\Routing\RouteMatchInterface;
 
-/**
- * Implementation of hook_uc_payment_method().
- */
 function uc_interkassa_uc_payment_method() {
   $methods['interkassa'] = array(
     'id' => 'interkassa',
@@ -24,6 +21,7 @@ function uc_interkassa_uc_payment_method() {
   );
   return $methods;
 }
+
 function uc_interkassa_help($route_name, RouteMatchInterface $route_match) {
   // Provide information and instructions on the payment method add and edit forms.
   if ($route_name == 'entity.uc_payment_method.add_form' &&
@@ -36,6 +34,17 @@ function uc_interkassa_help($route_name, RouteMatchInterface $route_match) {
     return '<p>' . t('Для приема платежей с помощью Интеркассы. Пожалуйста убедитесь, что выбраная валюта присутствует в настройках вашей кассы.') . '</p>';
   }
 }
+
+function uc_interkassa_ucga_display() {
+
+  //@todo, inject $route_name so we can do
+  //if ($route_name == 'uc_2checkout.complete')
+  if (arg(0) == 'cart' && arg(1) == 'interkassa' && arg(2) == 'complete') {
+    return TRUE;
+  }
+  
+}
+
 function uc_interkassa_theme() {
   return [
     'payways_form' => [
@@ -49,6 +58,4 @@ function uc_interkassa_preprocess_page(&$variables){
   if($current_path == '/cart/checkout/review'){
     $variables['#attached']['library'][] =  'uc_interkassa/interkassa';
   }
-
-
-}
+  }

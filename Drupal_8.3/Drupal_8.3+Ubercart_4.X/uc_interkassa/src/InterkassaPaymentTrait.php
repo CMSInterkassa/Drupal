@@ -20,37 +20,48 @@ trait InterkassaPaymentTrait {
   }
   public function getAccountApi($configuration) {
     $accountId = "";
+    $username = $configuration['api_id'];
+    $password = $configuration['api_key'];
     if ($configuration['api_mode']) {
-      $host =  $configuration['hostAccount'];
-      try {
-        $response = \Drupal::httpClient()->request('GET', $host, [
-          'headers' => [
-            'Authorization' => "Basic " .base64_encode($configuration['api_id'].":".$configuration['api_key']),
-          ],
-        ]);
+       $tmpLocationFile = __DIR__ . '/tmpLocalStorageBusinessAcc.ini';
+            $dataBusinessAcc = function_exists('file_get_contents') ? file_get_contents($tmpLocationFile) : '{}';
+            $dataBusinessAcc = json_decode($dataBusinessAcc, 1);
+            $businessAcc = is_string($dataBusinessAcc['businessAcc']) ? trim($dataBusinessAcc['businessAcc']) : '';
+            if (empty($businessAcc) || sha1($username . $password) !== $dataBusinessAcc['hash']) {
+                $curl = curl_init();
+                curl_setopt($curl, CURLOPT_URL, 'https://api.interkassa.com/v1/' . 'account');
+                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($curl, CURLOPT_FOLLOWLOCATION, false);
+                curl_setopt($curl, CURLOPT_HEADER, false);
+                curl_setopt($curl, CURLOPT_HTTPHEADER, ["Authorization: Basic " . base64_encode("$username:$password")]);
+                $response = curl_exec($curl);
+                $response = json_decode($response,1);
 
-      }
-      catch (TransferException  $e) {
-        \Drupal::logger('uc_interkassa')->error('API request failed with HTTP error %error.', ['%error' => $e->getMessage()]);
-        \Drupal::messenger()->addWarning('API request failed with HTTP error.' . $e->getMessage());
-        \Drupal::messenger()->addWarning('Invalid API parameters');
-        return $accountId;
-      }
-      if(isset($response) && $response) {
-        $returnInter = \GuzzleHttp\json_decode($response->getBody()->getContents());
-        if (isset($returnInter) && $returnInter->status == "ok" && $returnInter->code == 0) {
-          foreach ($returnInter->data as $key => $value) {
-            if ($value->tp == 'b') {
-              $accountId = $value->_id;
+
+                if (!empty($response['data'])) {
+                    foreach ($response['data'] as $id => $data) {
+                        if ($data['tp'] == 'b') {
+                            $businessAcc = $id;
+                            break;
+                        }
+                    }
+                }
+
+                if (function_exists('file_put_contents')) {
+                    $updData = [
+                        'businessAcc' => $businessAcc,
+                        'hash' => sha1($username . $password)
+                    ];
+                    file_put_contents($tmpLocationFile, json_encode($updData, JSON_PRETTY_PRINT));
+                }
+
+                return $businessAcc;
             }
-          }
-        }
-      }
-      if (!$accountId) {
-        \Drupal::messenger()->addWarning('Invalid API parameters');
-      }
+
+            return $businessAcc;
     }
-    return $accountId;
+    return $businessAcc;
   }
 
   public function getPayments($data,$host) {
@@ -79,13 +90,14 @@ trait InterkassaPaymentTrait {
     return $paywaySet;
   }
   public function getPaymentsAPI($configuration) {
-    $payment_systems = array();
+      $account_id = $this->getAccountApi($configuration); 
+  $payment_systems = array();
     if ($configuration['api_mode']) {
       $host = $configuration['hostPaySystem']."?checkoutId=" . $configuration['sid'];
       try {
         $response = \Drupal::httpClient()->request('GET', $host, [
           'headers' => [
-            'Authorization' => "Basic " . base64_encode($configuration['api_id'] . ":" . $configuration['api_key']),
+            'Authorization' => "Basic " . base64_encode($configuration['api_id'] . ":" . $configuration['api_key']), 'Ik-Api-Account-Id' => $account_id
           ],
         ]);
 
@@ -98,7 +110,7 @@ trait InterkassaPaymentTrait {
         return $payment_systems;
       }
       if(isset($response) && $response) {
-        $returnInter = \GuzzleHttp\json_decode($response->getBody()
+        $returnInter = json_decode($response->getBody()
           ->getContents());
         if ($returnInter->status == "ok" && $returnInter->code == 0) {
           $payways = $returnInter->data;

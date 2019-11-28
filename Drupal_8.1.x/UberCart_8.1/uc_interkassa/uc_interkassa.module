@@ -9,6 +9,18 @@
 
 use Drupal\Core\Routing\RouteMatchInterface;
 
+function uc_interkassa_uc_payment_method() {
+  $methods['interkassa'] = array(
+    'id' => 'interkassa',
+    'name' => t('Interkassa'),
+    'title' => t('Payment via Interkassa'),
+    'desc' => t('Pay through Interkassa'),
+    'weight' => 1,
+    'checkout' => true,
+    'no_gateway' => true,
+  );
+  return $methods;
+}
 
 function uc_interkassa_help($route_name, RouteMatchInterface $route_match) {
   // Provide information and instructions on the payment method add and edit forms.
@@ -30,4 +42,20 @@ function uc_interkassa_ucga_display() {
   if (arg(0) == 'cart' && arg(1) == 'interkassa' && arg(2) == 'complete') {
     return TRUE;
   }
+  
 }
+
+function uc_interkassa_theme() {
+  return [
+    'payways_form' => [
+      'render element' => 'form',
+    ],
+  ];
+}
+function uc_interkassa_preprocess_page(&$variables){
+
+  $current_path = \Drupal::service('path.current')->getPath();
+  if($current_path == '/cart/checkout/review'){
+    $variables['#attached']['library'][] =  'uc_interkassa/interkassa';
+  }
+  }

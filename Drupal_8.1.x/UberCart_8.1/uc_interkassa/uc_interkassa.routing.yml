@@ -4,7 +4,7 @@
 # Версия: 1.1
 
 uc_interkassa.complete:
-  path: '/cart/'
+  path: '/cart/{uc_order}'
   defaults:
     _controller: '\Drupal\uc_interkassa\Controller\InterkassaController::complete'
     _title: 'Order complete'
@@ -12,9 +12,25 @@ uc_interkassa.complete:
     _permission: 'access content'
 
 uc_interkassa.notification:
-  path: '/cart/interkassa/notification'
+  path: '/cart/interkassa/notification/{uc_order}'
   defaults:
     _controller: '\Drupal\uc_interkassa\Controller\InterkassaController::notification'
     _title: 'Notification callback'
+  requirements:
+    _permission: 'access content'
+    
+uc_interkassa.open_modal_payment:
+  path: '/interkassa/modal_payment'
+  defaults:
+    _title: 'Chose metod payment'
+    _controller: '\Drupal\uc_interkassa\Controller\ModalInterkassaController::openModalPayment'
+  requirements:
+    _permission: 'access content'
+    
+uc_interkassa.sendSign:
+  path: '/interkassa/sendSign'
+  defaults:
+    _title: 'Send payment request'
+    _controller: '\Drupal\uc_interkassa\Controller\InterkassaController::sendSign'
   requirements:
     _permission: 'access content'

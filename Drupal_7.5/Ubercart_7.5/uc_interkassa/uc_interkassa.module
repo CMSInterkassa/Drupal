@@ -7,11 +7,11 @@
  * @E-mail www@smartbyte.pro
  * @update_date 31.01.2017
  */
-
-
+    
 //admin view function
 function uc_interkassa_method_card($option, &$arg1)
 {
+    wrlog('uc_interkassa_method_card');
     $ik_form = array();
     if ($option == 'settings') {
         $ik_form['ik_co_id'] = array(
@@ -64,7 +64,8 @@ function uc_interkassa_method_card($option, &$arg1)
 
 function uc_interkassa_menu()
 {
-
+    
+    wrlog('uc_interkassa_menu');
     $items['uc_interkassa/result'] = array(
         'title' => 'Internal Data',
         'page callback' => 'uc_interkassa_result_payment',
@@ -110,6 +111,7 @@ function uc_interkassa_menu()
 
 function uc_interkassa_form_alter(&$form, $state, $form_id)
 {
+    wrlog('uc_interkassa_form_alter');
     if ($form_id == 'uc_cart_checkout_review_form') {
         if (($ik_pm_no = intval($_SESSION['cart_order'])) > 0) {
             if (empty($state['post'])) {
@@ -129,6 +131,8 @@ function uc_interkassa_form_alter(&$form, $state, $form_id)
 
 function uc_interkassa_uc_payment_method()
 {
+
+    wrlog('uc_interkassa_uc_payment_method');
     $path = base_path() . drupal_get_path('module', 'uc_interkassa');
     $method[] = array(
         'id' => 'interkassa',
@@ -146,6 +150,7 @@ function uc_interkassa_uc_payment_method()
 
 function uc_interkassa_form()
 {
+    wrlog('uc_interkassa_form');
 
     $order = uc_order_load($_SESSION['cart_order']);
     uc_order_comment_save($_SESSION['cart_order'], 0, t('Новый заказ! Пользователь выбрал Интеркассу'), 'admin');
@@ -204,6 +209,8 @@ function uc_interkassa_form()
 
 function uc_interkassa_get_data($orderId = 0, $summ = '1', $order)
 {
+    wrlog('uc_interkassa_get_data');
+
     $secret_key = variable_get('secret_key', '');
 
     if ($order->currency == 'RUR') {
@@ -211,6 +218,8 @@ function uc_interkassa_get_data($orderId = 0, $summ = '1', $order)
     } else {
         $ik_cur = $order->currency;
     }
+
+
 
     $formFields = array(
         'ik_co_id' => variable_get('ik_co_id', ''),
@@ -237,6 +246,7 @@ function uc_interkassa_get_data($orderId = 0, $summ = '1', $order)
 
 function uc_interkassa_result_payment()
 {
+    wrlog('uc_interkassa_result_payment');
     if (count($_POST) && checkIP() && variable_get('ik_co_id', '') == $_POST['ik_co_id']) {
         if ($_POST['ik_inv_st'] == 'success') {
             if (isset($_POST['ik_pw_via']) && $_POST['ik_pw_via'] == 'test_interkassa_test_xts') {
@@ -285,6 +295,7 @@ function uc_interkassa_result_payment()
 
 function uc_interkassa_payment_end($status)
 {
+    wrlog('uc_interkassa_payment_end');
     if (!empty($_POST) && isset($_POST['ik_inv_st']) && isset($_POST['ik_pm_no'])) {
 
         $order = uc_order_load($_POST['ik_pm_no']);
@@ -311,9 +322,10 @@ function uc_interkassa_payment_end($status)
 
 function checkIP()
 {
+    wrlog('checkIp');
     $ip_stack = array(
         'ip_begin' => '151.80.190.97',
-        'ip_end' => '151.80.190.104'
+        'ip_end' => '35.233.69.55'
     );
 
     if (!(ip2long($_SERVER['REMOTE_ADDR']) >= ip2long($ip_stack['ip_begin']) && ip2long($_SERVER['REMOTE_ADDR']) <= ip2long($ip_stack['ip_end']))) {
@@ -324,6 +336,7 @@ function checkIP()
 }
 function uc_interkassa_theme()
 {
+    wrlog('uc_interkassa_theme');
     return array(
         'api' => array(
             'template' => 'api',
@@ -334,6 +347,7 @@ function uc_interkassa_theme()
 
 function uc_interkassa_ajax_callback()
 {
+    wrlog('uc_interkassa_ajax_callback');
     $dataSet = [];
     $secret_key = variable_get('secret_key', '');
 
@@ -353,15 +367,75 @@ function uc_interkassa_ajax_callback()
 
 function getIkPaymentSystems($ik_co_id, $ik_api_id, $ik_api_key)
 {
+
+        $username = $ik_api_id;
+        $password = $ik_api_key;
+        $remote_url = 'https://api.interkassa.com/v1/paysystem-input-payway?checkoutId='.$ik_co_id;
+        
+        $businessAcc = getIkBusinessAcc($username, $password);
+   
+            
+        $ikHeaders = [];
+        $ikHeaders[] = "Authorization: Basic " . base64_encode("$username:$password");
+        if (!empty($businessAcc)) {
+            $ikHeaders[] = "Ik-Api-Account-Id: " . $businessAcc;
+        }
+                
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $remote_url);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $ikHeaders);
+        $response = curl_exec($ch);
+        $json_data = json_decode($response);
+        
+        if (empty($json_data))
+            echo'<strong style="color:red;">Error!!! System response empty!</strong>';
+
+            if ($json_data->status != 'error') {
+                $payment_systems = array();
+                if (!empty($json_data->data)) {
+                    
+                    foreach ($json_data->data as $ps => $info) {
+                        $payment_system = $info->ser;
+                        if (!array_key_exists($payment_system, $payment_systems)) {
+                            $payment_systems[$payment_system] = array();
+                            foreach ($info->name as $name) {
+                                if ($name->l == 'en') {
+                                    $payment_systems[$payment_system]['title'] = ucfirst($name->v);
+                                }
+                                $payment_systems[$payment_system]['name'][$name->l] = $name->v;
+                            }
+                        }
+                        $payment_systems[$payment_system]['currency'][strtoupper($info->curAls)] = $info->als;
+                    }
+                }
+                    
+                return !empty($payment_systems) ? $payment_systems : '<strong style="color:red;">API connection error or system response empty!</strong>';
+            } else {
+                if (!empty($json_data->message))
+                    echo '<strong style="color:red;">API connection error!<br>' . $json_data->message . '</strong>';
+                else
+                    echo '<strong style="color:red;">API connection error or system response empty!</strong>';
+            }
+        }
+
+
+
+  /*  wrlog('getIkPaymentSystems');
     $username = $ik_api_id;
     $password = $ik_api_key;
     $remote_url = 'https://api.interkassa.com/v1/paysystem-input-payway?checkoutId=' . $ik_co_id;
-
+    
+    $account_id = getIkBusinessAcc($username, $password);
+    
     // Create a stream
     $opts = array(
         'http' => array(
             'method' => "GET",
-            'header' => "Authorization: Basic " . base64_encode("$username:$password")
+            'header' => "Authorization: Basic " . base64_encode("$username:$password") . "Ik-Api-Account-Id:" . $account_id
         )
     );
 
@@ -386,8 +460,48 @@ function getIkPaymentSystems($ik_co_id, $ik_api_id, $ik_api_key)
         $payment_systems[$payment_system]['currency'][strtoupper($info->curAls)] = $info->als;
 
     }
-    return $payment_systems;
-}
+    return $payment_systems;*/
+
+
+function getIkBusinessAcc($username = '', $password = '')         {
+            $tmpLocationFile = __DIR__ . '/tmpLocalStorageBusinessAcc.ini';
+            $dataBusinessAcc = function_exists('file_get_contents') ? file_get_contents($tmpLocationFile) : '{}';
+            $dataBusinessAcc = json_decode($dataBusinessAcc, 1);
+            $businessAcc = is_string($dataBusinessAcc['businessAcc']) ? trim($dataBusinessAcc['businessAcc']) : '';
+            if (empty($businessAcc) || sha1($username . $password) !== $dataBusinessAcc['hash']) {
+                $curl = curl_init();
+                curl_setopt($curl, CURLOPT_URL, 'https://api.interkassa.com/v1/' . 'account');
+                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($curl, CURLOPT_FOLLOWLOCATION, false);
+                curl_setopt($curl, CURLOPT_HEADER, false);
+                curl_setopt($curl, CURLOPT_HTTPHEADER, ["Authorization: Basic " . base64_encode("$username:$password")]);
+                $response = curl_exec($curl);
+                $response = json_decode($response,1);
+
+
+                if (!empty($response['data'])) {
+                    foreach ($response['data'] as $id => $data) {
+                        if ($data['tp'] == 'b') {
+                            $businessAcc = $id;
+                            break;
+                        }
+                    }
+                }
+
+                if (function_exists('file_put_contents')) {
+                    $updData = [
+                        'businessAcc' => $businessAcc,
+                        'hash' => sha1($username . $password)
+                    ];
+                    file_put_contents($tmpLocationFile, json_encode($updData, JSON_PRETTY_PRINT));
+                }
+
+                return $businessAcc;
+            }
+
+            return $businessAcc;
+    }
 
 function wrlog($content)
 {

@@ -31,7 +31,7 @@ class InterkassaAjaxForm extends FormBase {
     $form['payment_metod'] = array('#type' => 'hidden', '#value' => '');
     foreach ($content as $name => $payway) {
       $form['content'][$name]['image'] = [
-        '#url' => '/' . drupal_get_path('module', 'commerce_payment_ik') . '/images/' . $name . '.png',
+        '#url' => '/' . \Drupal::service('extension.list.module')->getPath('commerce_payment_ik') . '/images/' . $name . '.png',
       ];
       foreach ($payway['currency'] as $currency => $currencyAlias) {
         $form['content'][$name]['currency'][$currencyAlias] = [
